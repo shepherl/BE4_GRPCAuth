@@ -17,7 +17,7 @@
           Rep2[Replica 2  :8080]:::java
       end
 
-      subgraph "AuthAPI (Go)"
+      subgraph "AuthAPI (Python)"
           Auth[Auth Service  gRPC :50051]:::go
       end
 
