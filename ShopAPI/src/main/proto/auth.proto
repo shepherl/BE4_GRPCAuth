@@ -1,0 +1,63 @@
+syntax = "proto3";
+
+package auth;
+
+// Это настройки для генерации Java-кода
+option java_multiple_files = true;
+option java_package = "com.school21.shopapi.grpc.auth";
+option java_outer_classname = "AuthProto";
+
+// Сам сервис авторизации, который будет реализовывать ваш друг на Go
+service AuthService {
+    // 1. Регистрация нового пользователя
+    rpc Register (RegisterRequest) returns (AuthResponse);
+
+    // 2. Вход в систему
+    rpc Login (LoginRequest) returns (AuthResponse);
+
+    // 3. Проверка токена (для вашего Middleware)
+    rpc ValidateToken (ValidateTokenRequest) returns (ValidateTokenResponse);
+
+    // 4. Сброс пароля (по заданию - имитация отправки на почту)
+    rpc ResetPassword (ResetPasswordRequest) returns (ResetPasswordResponse);
+}
+
+// === Структуры данных (Сообщения) ===
+
+message RegisterRequest {
+    string email = 1;
+    string first_name = 2;
+    string last_name = 3;
+    string phone = 4;
+    string password = 5;
+}
+
+message LoginRequest {
+    string email = 1;
+    string password = 2;
+}
+
+// Единый ответ для Login и Register (возвращаем сгенерированный JWT)
+message AuthResponse {
+    string token = 1;
+    string error = 2; // Если что-то пошло не так (пользователь существует, неверный пароль)
+}
+
+message ValidateTokenRequest {
+    string token = 1;
+}
+
+message ValidateTokenResponse {
+    bool is_valid = 1;
+    string email = 2; // Можно вернуть email пользователя, если токен валиден
+    string error = 3;
+}
+
+message ResetPasswordRequest {
+    string email = 1;
+}
+
+message ResetPasswordResponse {
+    bool success = 1;
+    string message = 2;
+}
