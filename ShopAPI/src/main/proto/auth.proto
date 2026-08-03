@@ -3,76 +3,81 @@ syntax = "proto3";
 package auth;
 
 // Это настройки для генерации Java-кода
+
 option java_multiple_files = true;
 option java_package = "com.school21.shopapi.grpc.auth";
 option java_outer_classname = "AuthProto";
 
-// Сервис авторизации
+
+// Сервис авторизации 
+
 service AuthService {
-    // 1. Регистрация нового пользователя
+    
+    // Регистрация нового пользователя
     rpc Register (RegisterRequest) returns (AuthResponse);
 
-    // 2. Вход в систему
+    // Вход в систему (Авторизация)
     rpc Login (LoginRequest) returns (AuthResponse);
 
-    // 3. Проверка токена (для вашего Middleware)
+    // Проверка токена (Валидация при каждом запросе к защищенным ресурсам)
     rpc ValidateToken (ValidateTokenRequest) returns (ValidateTokenResponse);
 
-    // 4. Смена пароля (пользователь залогинен и знает старый пароль)
+    // Смена пароля (Авторизованный пользователь)
     rpc ChangePassword (ChangePasswordRequest) returns (ChangePasswordResponse);
 
-    // 5. Сброс пароля (пользователь забыл пароль - имитация отправки на почту)
+    // Сброс пароля (Отправка нового пароля при утере)
     rpc ResetPassword (ResetPasswordRequest) returns (ResetPasswordResponse);
 }
 
-// === Структуры данных (Сообщения) ===
+
+// Структуры данных (DTO)
 
 message RegisterRequest {
-    string email = 1;
-    string first_name = 2;
-    string last_name = 3;
-    string phone = 4;
-    string password = 5;
+    string email = 1;       // Email пользователя (уникальный логин)
+    string first_name = 2;  // Имя пользователя
+    string last_name = 3;   // Фамилия пользователя
+    string phone = 4;       // Номер телефона
+    string password = 5;    // Пароль в открытом виде (хэшируется на сервере)
 }
 
 message LoginRequest {
-    string email = 1;
-    string password = 2;
+    string email = 1;       // Email пользователя
+    string password = 2;    // Пароль в открытом виде
 }
 
-// Единый ответ для Login и Register (возвращаем сгенерированный JWT)
+// Единый ответ для Login и Register
 message AuthResponse {
-    string token = 1;
-    string error = 2; // Если что-то пошло не так (пользователь существует, неверный пароль)
+    string token = 1;       // Сгенерированный JWT-токен для авторизации
+    string error = 2;       // Описание ошибки, если авторизация/регистрация не удалась
 }
 
 message ValidateTokenRequest {
-    string token = 1;
+    string token = 1;       // JWT-токен, присланный клиентом в HTTP-заголовке
 }
 
 message ValidateTokenResponse {
-    bool is_valid = 1;
-    string email = 2; // Можно вернуть email пользователя, если токен валиден
-    string error = 3;
-    string role = 4;  // Роль пользователя (например, "ADMIN" или "USER") для RBAC
+    bool is_valid = 1;      // Статус валидности токена (true/false)
+    string email = 2;       // Email пользователя, извлеченный из токена
+    string error = 3;       // Причина ошибки валидации (например, "Token expired")
+    string role = 4;        // Роль пользователя (например, "ADMIN" или "USER") для RBAC
 }
 
 message ChangePasswordRequest {
-    string token = 1;         // Токен авторизованного пользователя
+    string token = 1;         // JWT-токен авторизованного пользователя
     string old_password = 2;  // Текущий пароль (для подтверждения)
     string new_password = 3;  // Новый пароль
 }
 
 message ChangePasswordResponse {
-    bool success = 1;
-    string error = 2;
+    bool success = 1;         // Статус успешности смены пароля
+    string error = 2;         // Описание ошибки (например, "Неверный старый пароль")
 }
 
 message ResetPasswordRequest {
-    string email = 1;
+    string email = 1;         // Email пользователя, запрашивающего сброс пароля
 }
 
 message ResetPasswordResponse {
-    bool success = 1;
-    string message = 2;
+    bool success = 1;         // Статус успешности отправки пароля
+    string message = 2;       // Информационное сообщение ("Новый пароль отправлен")
 }
