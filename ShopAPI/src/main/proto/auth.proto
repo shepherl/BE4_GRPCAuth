@@ -7,7 +7,7 @@ option java_multiple_files = true;
 option java_package = "com.school21.shopapi.grpc.auth";
 option java_outer_classname = "AuthProto";
 
-// Сам сервис авторизации, который будет реализовывать ваш друг на Go
+// Сервис авторизации
 service AuthService {
     // 1. Регистрация нового пользователя
     rpc Register (RegisterRequest) returns (AuthResponse);
@@ -18,7 +18,10 @@ service AuthService {
     // 3. Проверка токена (для вашего Middleware)
     rpc ValidateToken (ValidateTokenRequest) returns (ValidateTokenResponse);
 
-    // 4. Сброс пароля (по заданию - имитация отправки на почту)
+    // 4. Смена пароля (пользователь залогинен и знает старый пароль)
+    rpc ChangePassword (ChangePasswordRequest) returns (ChangePasswordResponse);
+
+    // 5. Сброс пароля (пользователь забыл пароль - имитация отправки на почту)
     rpc ResetPassword (ResetPasswordRequest) returns (ResetPasswordResponse);
 }
 
@@ -51,6 +54,18 @@ message ValidateTokenResponse {
     bool is_valid = 1;
     string email = 2; // Можно вернуть email пользователя, если токен валиден
     string error = 3;
+    string role = 4;  // Роль пользователя (например, "ADMIN" или "USER") для RBAC
+}
+
+message ChangePasswordRequest {
+    string token = 1;         // Токен авторизованного пользователя
+    string old_password = 2;  // Текущий пароль (для подтверждения)
+    string new_password = 3;  // Новый пароль
+}
+
+message ChangePasswordResponse {
+    bool success = 1;
+    string error = 2;
 }
 
 message ResetPasswordRequest {
