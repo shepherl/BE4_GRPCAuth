@@ -1,4 +1,4 @@
-version: '3.8'
+###version: '3.8' del for tests
 
 services:
   db:
@@ -75,3 +75,31 @@ services:
       - shopapi-replica1
       - shopapi-replica2
       - pgadmin
+
+      
+# --- НОВЫЙ БЛОК: Инфраструктура микросервиса авторизации ---
+  
+  auth-db:
+    image: postgres:15
+    environment:
+      POSTGRES_DB: authdb
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5433:5432" # Пробрасываем наружу на 5433, как на архитектурной схеме
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d authdb"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  auth-api:
+    build:
+      context: ./AuthAPI
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres@auth-db:5432/authdb
+    ports:
+      - "50051:50051"
+    depends_on:
+      auth-db:
+        condition: service_healthy

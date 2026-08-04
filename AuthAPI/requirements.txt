@@ -1,0 +1,12 @@
+bcrypt==4.1.2
+greenlet==3.5.4
+grpcio==1.59.0
+grpcio-tools==1.59.0
+mypy-protobuf==3.5.0
+protobuf==4.25.3
+psycopg2-binary==2.9.9
+PyJWT==2.8.0
+setuptools==69.5.1
+SQLAlchemy==2.0.23
+types-protobuf==7.34.1.20260518
+typing_extensions==4.16.0
