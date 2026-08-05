@@ -5,6 +5,7 @@ import string
 import auth_pb2
 import auth_pb2_grpc
 import bcrypt
+import grpc
 import jwt
 from models import User
 
@@ -33,7 +34,8 @@ class AuthService(auth_pb2_grpc.AuthServiceServicer):
     def Register(self, request, context):
         with self.db_session_factory() as db:
             if db.query(User).filter(User.email == request.email).first():
-                return auth_pb2.AuthResponse(error="Пользователь с таким email уже существует")
+                # Прерываем выполнение и отправляем gRPC-статус
+                context.abort(grpc.StatusCode.ALREADY_EXISTS, "Пользователь с таким email уже существует")
             
             new_user = User(
                 email=request.email,
@@ -51,8 +53,11 @@ class AuthService(auth_pb2_grpc.AuthServiceServicer):
     def Login(self, request, context):
         with self.db_session_factory() as db:
             user = db.query(User).filter(User.email == request.email).first()
-            if not user or not self._check_password(request.password, user.password_hash):
-                return auth_pb2.AuthResponse(error="Неверный email или пароль")
+            if not user:
+                context.abort(grpc.StatusCode.NOT_FOUND, "Пользователь с таким email не найден")
+            
+            if not self._check_password(request.password, user.password_hash):
+                context.abort(grpc.StatusCode.UNAUTHENTICATED, "Неверный пароль")
             
             token = self._create_token(user.email)
             return auth_pb2.AuthResponse(token=token, error="")
@@ -67,21 +72,26 @@ class AuthService(auth_pb2_grpc.AuthServiceServicer):
                 error=""
             )
         except jwt.ExpiredSignatureError:
-            return auth_pb2.ValidateTokenResponse(is_valid=False, error="Token expired")
+            context.abort(grpc.StatusCode.UNAUTHENTICATED, "Токен просрочен")
         except jwt.InvalidTokenError:
-            return auth_pb2.ValidateTokenResponse(is_valid=False, error="Invalid token")
+            context.abort(grpc.StatusCode.UNAUTHENTICATED, "Недействительный токен")
 
     def ChangePassword(self, request, context):
         try:
             payload = jwt.decode(request.token, SECRET_KEY, algorithms=["HS256"])
             email = payload.get("email")
+        except jwt.ExpiredSignatureError:
+            context.abort(grpc.StatusCode.UNAUTHENTICATED, "Токен просрочен")
         except jwt.InvalidTokenError:
-            return auth_pb2.ChangePasswordResponse(success=False, error="Недействительный токен")
+            context.abort(grpc.StatusCode.UNAUTHENTICATED, "Недействительный токен")
 
         with self.db_session_factory() as db:
             user = db.query(User).filter(User.email == email).first()
-            if not user or not self._check_password(request.old_password, user.password_hash):
-                return auth_pb2.ChangePasswordResponse(success=False, error="Неверный старый пароль")
+            if not user:
+                context.abort(grpc.StatusCode.NOT_FOUND, "Пользователь не найден")
+                
+            if not self._check_password(request.old_password, user.password_hash):
+                context.abort(grpc.StatusCode.INVALID_ARGUMENT, "Неверный старый пароль")
             
             user.password_hash = self._hash_password(request.new_password)
             db.commit()
@@ -91,7 +101,7 @@ class AuthService(auth_pb2_grpc.AuthServiceServicer):
         with self.db_session_factory() as db:
             user = db.query(User).filter(User.email == request.email).first()
             if not user:
-                return auth_pb2.ResetPasswordResponse(success=True, message="Если email существует, пароль отправлен")
+                context.abort(grpc.StatusCode.NOT_FOUND, "Пользователь с таким email не найден")
 
             new_password = ''.join(random.choices(string.ascii_letters + string.digits, k=10))
             # Заглушка: выводим пароль в консоль сервера
