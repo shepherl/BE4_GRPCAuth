@@ -1,35 +1,180 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>School 21 - Nginx Proxy</title>
+    <title>Test API</title>
     <style>
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: #121212;
-            color: #ffffff;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            height: 100vh;
-            margin: 0;
+        body { font-family: sans-serif; padding: 20px; display: flex; gap: 30px; }
+        .column { flex: 1; max-width: 450px; }
+        .box { border: 1px solid #ccc; padding: 15px; margin-bottom: 20px; }
+        input { display: block; margin-bottom: 10px; padding: 8px; width: 100%; box-sizing: border-box;}
+        button { padding: 8px 15px; cursor: pointer; margin-bottom: 5px; }
+        
+        /* Стили для лога консоли */
+        .log-container { 
+            flex: 1;
+            min-width: 350px;
+            max-width: 450px;
+            border: 1px solid #333; 
+            background: #1e1e1e; 
+            color: #d4d4d4; 
+            padding: 15px; 
+            height: 90vh; 
+            overflow-y: auto; 
+            font-family: 'Courier New', Courier, monospace; 
+            border-radius: 5px;
         }
-        h1 {
-            color: #4CAF50;
-        }
-        img {
-            margin-top: 20px;
-            max-width: 300px;
-            border-radius: 10px;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.5);
-        }
+        .log-entry { border-bottom: 1px dashed #555; padding-bottom: 15px; margin-bottom: 15px; }
+        .log-req { color: #569cd6; font-weight: bold; margin-bottom: 5px; }
+        .log-res { margin-top: 5px; padding-left: 10px; border-left: 2px solid; }
+        .log-res.ok { color: #4ec9b0; border-left-color: #4ec9b0; }
+        .log-res.err { color: #f44747; border-left-color: #f44747; }
+        pre { margin: 5px 0 0 0; white-space: pre-wrap; word-break: break-all; }
     </style>
 </head>
 <body>
-    <h1>Welcome to School 21 Nginx Server!</h1>
-    <p>Reverse proxy, load balancing, and caching are working perfectly.</p>
-    <img src="image.png" alt="Test Image">
+
+    <div class="column">
+        <h1>Панель тестирования</h1>
+
+        <div class="box">
+            <h3>📝 Регистрация</h3>
+            <input type="text" id="reg-email" placeholder="Email">
+            <input type="text" id="reg-firstname" placeholder="Имя">
+            <input type="text" id="reg-lastname" placeholder="Фамилия">
+            <input type="text" id="reg-phone" placeholder="Телефон">
+            <input type="password" id="reg-password" placeholder="Пароль">
+            <button onclick="register()">Отправить</button>
+            <p id="reg-status" style="font-weight: bold;"></p>
+        </div>
+
+        <div class="box">
+            <h3>🔐 Логин</h3>
+            <input type="text" id="log-email" placeholder="Email">
+            <input type="password" id="log-password" placeholder="Пароль">
+            <button onclick="login()">Отправить</button>
+            <p id="log-status" style="font-weight: bold;"></p>
+        </div>
+
+        <div class="box">
+            <h3>🛡️ Доступ к товарам (Middleware)</h3>
+            <button onclick="fetchProducts(false)">Запрос БЕЗ токена (Ожидаем 401)</button><br>
+            <button onclick="fetchProducts(true)">Запрос С токеном (Ожидаем 200)</button><br>
+            <button onclick="clearLog()" style="margin-top: 15px; background: #ddd; border: 1px solid #999;">Очистить лог</button>
+        </div>
+    </div>
+
+    <!-- Блок логов -->
+    <div class="log-container" id="api-log">
+        <h2 style="color: #fff; margin-top:0; border-bottom: 1px solid #333; padding-bottom: 10px;">📡 API Logs</h2>
+        <div id="log-content"></div>
+    </div>
+
+    <script>
+        let currentToken = "";
+
+        // Умная обертка над fetch для перехвата и логирования
+        async function apiFetch(url, options = {}) {
+            const logContent = document.getElementById('log-content');
+            const entry = document.createElement('div');
+            entry.className = 'log-entry';
+            
+            const method = options.method || 'GET';
+            let reqBody = '';
+            if (options.body) {
+                try {
+                    reqBody = `\n\n${JSON.stringify(JSON.parse(options.body), null, 2)}`;
+                } catch(e) {
+                    reqBody = `\n\n${options.body}`;
+                }
+            }
+            
+            // Формируем красивые заголовки запроса
+            let reqHeaders = '';
+            if (options.headers) {
+                for (const [key, value] of Object.entries(options.headers)) {
+                    reqHeaders += `\n> ${key}: ${value}`;
+                }
+            }
+            
+            // Пишем запрос в стиле HTTP Trace
+            let reqText = `> ${method} ${url} HTTP/1.1${reqHeaders}${reqBody}`;
+            entry.innerHTML = `<pre class="log-req">${reqText}</pre>`;
+            logContent.prepend(entry);
+
+            try {
+                const res = await fetch(url, options);
+                const text = await res.text();
+                
+                let resClass = res.ok ? 'ok' : 'err';
+                let parsedText = text;
+                try { parsedText = JSON.stringify(JSON.parse(text), null, 2); } catch(e){}
+
+                // Пишем ответ в стиле HTTP Trace
+                let statusText = res.statusText ? res.statusText : (res.ok ? 'OK' : 'Error');
+                let resText = `< HTTP/1.1 ${res.status} ${statusText}\n\n${parsedText}`;
+                entry.innerHTML += `<div class="log-res ${resClass}"><pre>${resText}</pre></div>`;
+                
+                return {
+                    ok: res.ok,
+                    status: res.status,
+                    json: async () => JSON.parse(text),
+                    text: async () => text
+                };
+            } catch (e) {
+                entry.innerHTML += `<div class="log-res err"><pre>! ПРОБЛЕМА СЕТИ: ${e.message}</pre></div>`;
+                throw e;
+            }
+        }
+
+        function clearLog() {
+            document.getElementById('log-content').innerHTML = '';
+        }
+
+        async function register() {
+            const data = {
+                email: document.getElementById('reg-email').value,
+                firstName: document.getElementById('reg-firstname').value,
+                lastName: document.getElementById('reg-lastname').value,
+                phone: document.getElementById('reg-phone').value,
+                password: document.getElementById('reg-password').value
+            };
+            const res = await apiFetch('/api/v1/auth/register', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+            const result = await res.json();
+            document.getElementById('reg-status').innerText = res.ok ? "Успешно! (см. лог)" : "Ошибка! (см. лог)";
+            if (result.token) { currentToken = result.token; }
+        }
+
+        async function login() {
+            const data = {
+                email: document.getElementById('log-email').value,
+                password: document.getElementById('log-password').value
+            };
+            const res = await apiFetch('/api/v1/auth/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+            const result = await res.json();
+            document.getElementById('log-status').innerText = res.ok ? "Успешно! (см. лог)" : "Ошибка! (см. лог)";
+            if (result.token) { currentToken = result.token; }
+        }
+
+        async function fetchProducts(useToken) {
+            const headers = { 'Content-Type': 'application/json' };
+            if (useToken && currentToken) {
+                headers['Authorization'] = 'Bearer ' + currentToken;
+            } else if (useToken && !currentToken) {
+                alert("Сначала нужно залогиниться, чтобы получить токен!");
+                return;
+            }
+            
+            await apiFetch('/api/v1/products', { headers });
+        }
+    </script>
 </body>
 </html>
