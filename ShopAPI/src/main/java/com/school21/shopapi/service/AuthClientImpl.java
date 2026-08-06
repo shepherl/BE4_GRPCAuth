@@ -46,11 +46,6 @@ public class AuthClientImpl implements AuthClient {
 
         AuthResponse response = authStub.register(request);
 
-        // === ВРЕМЕННЫЙ АДАПТЕР ===
-        if (!response.getError().isEmpty()) {
-            // Искусственно кидаем gRPC Exception, чтобы контроллер красиво его поймал
-            throw new StatusRuntimeException(Status.ALREADY_EXISTS.withDescription(response.getError()));
-        }
 
         return response.getToken();
     }
@@ -64,10 +59,6 @@ public class AuthClientImpl implements AuthClient {
 
         AuthResponse response = authStub.login(request);
 
-        // === ВРЕМЕННЫЙ АДАПТЕР ===
-        if (!response.getError().isEmpty()) {
-            throw new StatusRuntimeException(Status.INVALID_ARGUMENT.withDescription(response.getError()));
-        }
 
         return response.getToken();
     }
@@ -80,10 +71,6 @@ public class AuthClientImpl implements AuthClient {
 
         ValidateTokenResponse response = authStub.validateToken(request);
 
-        // === ВРЕМЕННЫЙ АДАПТЕР ===
-        if (!response.getIsValid() || !response.getError().isEmpty()) {
-            throw new StatusRuntimeException(Status.UNAUTHENTICATED.withDescription(response.getError()));
-        }
 
         return response;
     }
@@ -98,10 +85,6 @@ public class AuthClientImpl implements AuthClient {
 
         ChangePasswordResponse response = authStub.changePassword(request);
 
-        // === ВРЕМЕННЫЙ АДАПТЕР ===
-        if (!response.getSuccess() || !response.getError().isEmpty()) {
-            throw new StatusRuntimeException(Status.INVALID_ARGUMENT.withDescription(response.getError()));
-        }
 
         return response;
     }

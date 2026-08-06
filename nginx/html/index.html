@@ -60,13 +60,23 @@
             <h3>🛡️ Доступ к товарам (Middleware)</h3>
             <button onclick="fetchProducts(false)">Запрос БЕЗ токена (Ожидаем 401)</button><br>
             <button onclick="fetchProducts(true)">Запрос С токеном (Ожидаем 200)</button><br>
-            <button onclick="clearLog()" style="margin-top: 15px; background: #ddd; border: 1px solid #999;">Очистить лог</button>
+        </div>
+
+        <div class="box">
+            <h3>🔄 Смена пароля</h3>
+            <input type="password" id="change-old-password" placeholder="Старый пароль">
+            <input type="password" id="change-new-password" placeholder="Новый пароль">
+            <button onclick="changePassword()">Отправить</button>
+            <p id="change-status" style="font-weight: bold;"></p>
         </div>
     </div>
 
     <!-- Блок логов -->
     <div class="log-container" id="api-log">
-        <h2 style="color: #fff; margin-top:0; border-bottom: 1px solid #333; padding-bottom: 10px;">📡 API Logs</h2>
+        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #333; padding-bottom: 10px; margin-bottom: 10px;">
+            <h2 style="color: #fff; margin: 0;">📡 API Logs</h2>
+            <button onclick="clearLog()" style="background: #444; color: #fff; border: 1px solid #666; padding: 4px 10px; margin: 0; border-radius: 4px;">🗑️ Очистить</button>
+        </div>
         <div id="log-content"></div>
     </div>
 
@@ -173,7 +183,27 @@
                 return;
             }
             
-            await apiFetch('/api/v1/products', { headers });
+            await apiFetch('/api/v1/products/available', { headers });
+        }
+
+        async function changePassword() {
+            if (!currentToken) {
+                alert("Сначала нужно залогиниться, чтобы получить токен!");
+                return;
+            }
+            const data = {
+                oldPassword: document.getElementById('change-old-password').value,
+                newPassword: document.getElementById('change-new-password').value
+            };
+            const res = await apiFetch('/api/v1/auth/change-password', {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer ' + currentToken
+                },
+                body: JSON.stringify(data)
+            });
+            document.getElementById('change-status').innerText = res.ok ? "Успешно! (см. лог)" : "Ошибка! (см. лог)";
         }
     </script>
 </body>

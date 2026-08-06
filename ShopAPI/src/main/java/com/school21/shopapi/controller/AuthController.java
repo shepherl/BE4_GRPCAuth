@@ -3,6 +3,7 @@ package com.school21.shopapi.controller;
 import com.school21.shopapi.dto.auth.AuthLoginDto;
 import com.school21.shopapi.dto.auth.AuthRegisterDto;
 import com.school21.shopapi.dto.auth.AuthResetDto;
+import com.school21.shopapi.dto.auth.AuthChangePasswordDto;
 import com.school21.shopapi.service.AuthClient;
 import io.grpc.StatusRuntimeException;
 import jakarta.validation.Valid;
@@ -55,6 +56,24 @@ public class AuthController {
         try {
             var response = authClient.resetPassword(dto.getEmail());
             return ResponseEntity.ok(Map.of("message", response.getMessage()));
+        } catch (StatusRuntimeException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(Map.of("error", e.getStatus().getDescription()));
+        }
+    }
+
+    @PostMapping("/change-password")
+    public ResponseEntity<?> changePassword(
+            @RequestHeader(value = "Authorization", required = false) String authHeader, 
+            @Valid @RequestBody AuthChangePasswordDto dto) {
+        try {
+            if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                        .body(Map.of("error", "Отсутствует или неверный токен"));
+            }
+            String token = authHeader.substring(7);
+            var response = authClient.changePassword(token, dto.getOldPassword(), dto.getNewPassword());
+            return ResponseEntity.ok(Map.of("success", true));
         } catch (StatusRuntimeException e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                     .body(Map.of("error", e.getStatus().getDescription()));
