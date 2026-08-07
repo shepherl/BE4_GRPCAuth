@@ -41,6 +41,9 @@ class AuthService(auth_pb2_grpc.AuthServiceServicer):
     def Register(self, request, context):
         try:
             # Валидация и нормализация данных
+            if not request.password or len(request.password) < 8:
+                raise ValueError("Пароль должен содержать минимум 8 символов")
+            
             clean_email = validate_and_normalize_email(request.email)
             clean_phone = validate_phone(request.phone)
         except ValueError as e:

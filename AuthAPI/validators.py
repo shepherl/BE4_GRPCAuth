@@ -34,10 +34,13 @@ def validate_phone(phone: str) -> str:
 
     return clean_phone
 
-
 def check_password_change(old_password: str, new_password: str):
     """
-    Проверяет, что новый пароль не совпадает со старым.
+    Проверяет, что новый пароль соответствует требованиям по длине
+    и не совпадает со старым.
     """
+    if not new_password or len(new_password) < 8:
+        raise ValueError("Новый пароль должен содержать минимум 8 символов")
+
     if old_password == new_password:
         raise ValueError("Новый пароль не должен совпадать с текущим")
