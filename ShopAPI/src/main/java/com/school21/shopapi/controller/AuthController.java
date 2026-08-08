@@ -40,7 +40,7 @@ public class AuthController {
         }
     }
 
-    @PostMapping("/login")
+    @PostMapping("/auth")
     public ResponseEntity<?> login(@Valid @RequestBody AuthLoginDto dto) {
         try {
             String token = authClient.login(dto.getEmail(), dto.getPassword());

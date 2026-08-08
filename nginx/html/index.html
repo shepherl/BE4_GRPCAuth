@@ -172,7 +172,7 @@
                 email: document.getElementById('log-email').value,
                 password: document.getElementById('log-password').value
             };
-            const res = await apiFetch('/api/v1/auth/login', {
+            const res = await apiFetch('/api/v1/auth/auth', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(data)
