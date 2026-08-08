@@ -63,6 +63,14 @@
         </div>
 
         <div class="box">
+            <h3>📨 Сброс пароля (Заглушка почты)</h3>
+            <input type="text" id="reset-email" placeholder="Ваш Email">
+            <button onclick="resetPassword()">Отправить новый пароль</button>
+            <p id="reset-status" style="font-weight: bold;"></p>
+            <p style="font-size: 0.85em; color: #666; margin-top: 5px;">Новый пароль печатается в консоль Python-сервиса (как требует задание). Чтобы увидеть его на сервере, введите: <br><code>sudo docker logs be4_grpcauth-auth-api-1</code></p>
+        </div>
+
+        <div class="box">
             <h3>🔄 Смена пароля</h3>
             <input type="password" id="change-old-password" placeholder="Старый пароль">
             <input type="password" id="change-new-password" placeholder="Новый пароль">
@@ -184,6 +192,18 @@
             }
             
             await apiFetch('/api/v1/products/available', { headers });
+        }
+
+        async function resetPassword() {
+            const data = {
+                email: document.getElementById('reset-email').value
+            };
+            const res = await apiFetch('/api/v1/auth/reset', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+            document.getElementById('reset-status').innerText = res.ok ? "Запрос отправлен!" : "Ошибка!";
         }
 
         async function changePassword() {
