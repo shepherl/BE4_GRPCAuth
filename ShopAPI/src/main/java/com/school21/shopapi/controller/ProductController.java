@@ -1,6 +1,7 @@
 package com.school21.shopapi.controller;
 
 import com.school21.shopapi.dto.ProductDto;
+import com.school21.shopapi.security.RequiresAuth;
 import com.school21.shopapi.service.ProductService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -17,6 +18,7 @@ import java.util.UUID;
 @RequestMapping("/api/v1/products")
 @RequiredArgsConstructor
 @Tag(name = "Product API", description = "Operations related to products")
+@RequiresAuth
 public class ProductController {
 
     private final ProductService productService;
@@ -48,6 +50,7 @@ public class ProductController {
 
     @DeleteMapping("/{id}")
     @Operation(summary = "Delete product by ID")
+    @RequiresAuth(roles = {"ADMIN"})
     public ResponseEntity<Void> deleteProduct(@PathVariable UUID id) {
         productService.deleteProduct(id);
         return ResponseEntity.noContent().build();

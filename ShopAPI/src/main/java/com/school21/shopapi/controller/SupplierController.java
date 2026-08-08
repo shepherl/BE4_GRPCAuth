@@ -2,6 +2,7 @@ package com.school21.shopapi.controller;
 
 import com.school21.shopapi.dto.AddressDto;
 import com.school21.shopapi.dto.SupplierDto;
+import com.school21.shopapi.security.RequiresAuth;
 import com.school21.shopapi.service.SupplierService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -18,6 +19,7 @@ import java.util.UUID;
 @RequestMapping("/api/v1/suppliers")
 @RequiredArgsConstructor
 @Tag(name = "Supplier API", description = "Operations related to suppliers")
+@RequiresAuth
 public class SupplierController {
 
     private final SupplierService supplierService;
@@ -37,6 +39,7 @@ public class SupplierController {
 
     @DeleteMapping("/{id}")
     @Operation(summary = "Delete supplier by ID")
+    @RequiresAuth(roles = {"ADMIN"})
     public ResponseEntity<Void> deleteSupplier(@PathVariable UUID id) {
         supplierService.deleteSupplier(id);
         return ResponseEntity.noContent().build();

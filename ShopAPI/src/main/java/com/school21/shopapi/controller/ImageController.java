@@ -1,6 +1,7 @@
 package com.school21.shopapi.controller;
 
 import com.school21.shopapi.service.ImageService;
+import com.school21.shopapi.security.RequiresAuth;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
@@ -18,6 +19,7 @@ import java.util.UUID;
 @RequestMapping("/api/v1/images")
 @RequiredArgsConstructor
 @Tag(name = "Image API", description = "Operations related to product images")
+@RequiresAuth
 public class ImageController {
 
     private final ImageService imageService;
@@ -41,6 +43,7 @@ public class ImageController {
 
     @DeleteMapping("/{imageId}")
     @Operation(summary = "Delete image by ID")
+    @RequiresAuth(roles = {"ADMIN"})
     public ResponseEntity<Void> deleteImage(@PathVariable UUID imageId) {
         imageService.deleteImage(imageId);
         return ResponseEntity.noContent().build();

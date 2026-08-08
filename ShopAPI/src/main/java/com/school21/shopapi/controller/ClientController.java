@@ -2,6 +2,7 @@ package com.school21.shopapi.controller;
 
 import com.school21.shopapi.dto.AddressDto;
 import com.school21.shopapi.dto.ClientDto;
+import com.school21.shopapi.security.RequiresAuth;
 import com.school21.shopapi.service.ClientService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -18,6 +19,7 @@ import java.util.UUID;
 @RequestMapping("/api/v1/clients")
 @RequiredArgsConstructor
 @Tag(name = "Client API", description = "Operations related to clients")
+@RequiresAuth
 public class ClientController {
 
     private final ClientService clientService;
@@ -30,6 +32,7 @@ public class ClientController {
 
     @DeleteMapping("/{id}")
     @Operation(summary = "Delete client by ID")
+    @RequiresAuth(roles = {"ADMIN"})
     public ResponseEntity<Void> deleteClient(@PathVariable UUID id) {
         clientService.deleteClient(id);
         return ResponseEntity.noContent().build();
