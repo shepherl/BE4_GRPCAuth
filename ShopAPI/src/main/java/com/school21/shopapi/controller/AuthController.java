@@ -34,7 +34,7 @@ public class AuthController {
             );
             return ResponseEntity.ok(Map.of("token", token));
         } catch (StatusRuntimeException e) {
-            // Если Питонист вернул ошибку, берем его текст и возвращаем с кодом 400
+            // gRPC вернул ошибку — пробрасываем описание клиенту
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                     .body(Map.of("error", e.getStatus().getDescription()));
         }

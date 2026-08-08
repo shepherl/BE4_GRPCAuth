@@ -21,20 +21,20 @@ public class AuthInterceptor implements HandlerInterceptor {
 
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
-        // Пропускаем статику и CORS запросы
+        // Пропускаем не-контроллерные обработчики (статика, CORS)
         if (!(handler instanceof HandlerMethod)) {
             return true; 
         }
 
         HandlerMethod handlerMethod = (HandlerMethod) handler;
         
-        // Ищем нашу аннотацию @RequiresAuth на методе или классе
+        // Проверяем наличие @RequiresAuth на методе или классе
         RequiresAuth requiresAuth = handlerMethod.getMethodAnnotation(RequiresAuth.class);
         if (requiresAuth == null) {
             requiresAuth = handlerMethod.getBeanType().getAnnotation(RequiresAuth.class);
         }
 
-        // Если аннотации нет — метод публичный, пускаем дальше
+        // Без аннотации — эндпоинт публичный
         if (requiresAuth == null) {
             return true;
         }
@@ -50,10 +50,10 @@ public class AuthInterceptor implements HandlerInterceptor {
         String token = authHeader.substring(7);
 
         try {
-            // Отправляем токен на проверку Питонисту по gRPC
+            // Валидация токена через gRPC
             var validationResponse = authClient.validateToken(token);
             
-            // Если токен валиден, проверяем роли (RBAC)
+            // Проверка ролей (RBAC)
             String[] allowedRoles = requiresAuth.roles();
             if (allowedRoles.length > 0) {
                 String userRole = validationResponse.getRole();
@@ -66,13 +66,13 @@ public class AuthInterceptor implements HandlerInterceptor {
                 }
             }
             
-            // Сохраняем email в request, чтобы контроллер мог узнать, кто к нему пришел
+            // Пробрасываем email пользователя в request для контроллера
             request.setAttribute("userEmail", validationResponse.getEmail());
             
             return true;
             
         } catch (StatusRuntimeException e) {
-            // Токен просрочен или Питонист кинул ошибку
+            // Невалидный или просроченный токен
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED); // HTTP 401
             response.getWriter().write(e.getStatus().getDescription() != null ? e.getStatus().getDescription() : "Invalid token");
             return false;

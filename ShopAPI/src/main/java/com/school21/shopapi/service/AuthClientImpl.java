@@ -16,17 +16,17 @@ public class AuthClientImpl implements AuthClient {
     private final ManagedChannel channel;
     private final AuthServiceGrpc.AuthServiceBlockingStub authStub;
 
-    // Внедряем адрес Питониста (по умолчанию auth-api:50051)
+    // Адрес сервиса авторизации (по умолчанию auth-api:50051)
     public AuthClientImpl(@Value("${auth.service.host:auth-api}") String host,
                           @Value("${auth.service.port:50051}") int port) {
-        // Создаем канал связи (без SSL шифрования, так как мы внутри Docker-сети)
+        // Канал без TLS — трафик идет внутри Docker-сети
         this.channel = ManagedChannelBuilder.forAddress(host, port)
                 .usePlaintext()
                 .build();
         this.authStub = AuthServiceGrpc.newBlockingStub(channel);
     }
 
-    // Закрываем канал при выключении Spring Boot
+    // Закрываем gRPC канал при остановке приложения
     @PreDestroy
     public void shutdown() {
         if (channel != null && !channel.isShutdown()) {
@@ -45,8 +45,6 @@ public class AuthClientImpl implements AuthClient {
                 .build();
 
         AuthResponse response = authStub.register(request);
-
-
         return response.getToken();
     }
 
@@ -58,8 +56,6 @@ public class AuthClientImpl implements AuthClient {
                 .build();
 
         AuthResponse response = authStub.login(request);
-
-
         return response.getToken();
     }
 
@@ -70,8 +66,6 @@ public class AuthClientImpl implements AuthClient {
                 .build();
 
         ValidateTokenResponse response = authStub.validateToken(request);
-
-
         return response;
     }
 
@@ -84,8 +78,6 @@ public class AuthClientImpl implements AuthClient {
                 .build();
 
         ChangePasswordResponse response = authStub.changePassword(request);
-
-
         return response;
     }
 
@@ -95,7 +87,7 @@ public class AuthClientImpl implements AuthClient {
                 .setEmail(email)
                 .build();
 
-        // У ResetPassword нет поля error, Питонист возвращает только success и message
+        // ResetPassword возвращает success и message
         return authStub.resetPassword(request);
     }
 }

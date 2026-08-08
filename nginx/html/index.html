@@ -63,6 +63,13 @@
         </div>
 
         <div class="box">
+            <h3>🚫 Удаление товара (Проверка Ролей)</h3>
+            <input type="text" id="delete-product-id" placeholder="UUID товара" value="123e4567-e89b-12d3-a456-426614174000">
+            <button onclick="deleteProduct()">Удалить (Ожидаем 403)</button>
+            <p style="font-size: 0.85em; color: #666; margin-top: 5px;">Демонстрация авторизации: ваша роль USER, а метод требует ADMIN.</p>
+        </div>
+
+        <div class="box">
             <h3>📨 Сброс пароля (Заглушка почты)</h3>
             <input type="text" id="reset-email" placeholder="Ваш Email">
             <button onclick="resetPassword()">Отправить новый пароль</button>
@@ -192,6 +199,18 @@
             }
             
             await apiFetch('/api/v1/products/available', { headers });
+        }
+
+        async function deleteProduct() {
+            if (!currentToken) {
+                alert("Сначала нужно залогиниться, чтобы получить токен!");
+                return;
+            }
+            const productId = document.getElementById('delete-product-id').value;
+            await apiFetch('/api/v1/products/' + productId, { 
+                method: 'DELETE',
+                headers: { 'Authorization': 'Bearer ' + currentToken }
+            });
         }
 
         async function resetPassword() {
