@@ -68,7 +68,9 @@ class AuthService(auth_pb2_grpc.AuthServiceServicer):
             db.add(new_user)
             db.commit()
 
-            token = self._create_token(clean_email)
+            # Если почта начинается на admin@, даем права администратора
+            role = "ADMIN" if clean_email.startswith("admin@") else "USER"
+            token = self._create_token(clean_email, role=role)
             return auth_pb2.AuthResponse(token=token, error="")
 
     def Login(self, request, context):
@@ -88,7 +90,9 @@ class AuthService(auth_pb2_grpc.AuthServiceServicer):
             if not self._check_password(request.password, user.password_hash):
                 context.abort(grpc.StatusCode.UNAUTHENTICATED, "Неверный пароль")
 
-            token = self._create_token(user.email)
+            # Выдаем правильную роль при логине
+            role = "ADMIN" if user.email.startswith("admin@") else "USER"
+            token = self._create_token(user.email, role=role)
             return auth_pb2.AuthResponse(token=token, error="")
 
     def ValidateToken(self, request, context):
