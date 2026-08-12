@@ -13,8 +13,9 @@ echo "==============================================="
 declare -A server_counts
 
 for i in $(seq 1 $REQUESTS); do
-    # Отправляем запрос и вытаскиваем только заголовок X-Upstream-Server
-    UPSTREAM=$(curl -s -I $URL | grep -i "x-upstream-server" | awk '{print $2}' | tr -d '\r')
+    # Отправляем настоящий GET-запрос (чтобы сработал балансировщик для GET), 
+    # сохраняем только заголовки и вытаскиваем нужный
+    UPSTREAM=$(curl -s -D - -o /dev/null -X GET $URL | grep -i "x-upstream-server" | awk '{print $2}' | tr -d '\r')
     
     if [ -z "$UPSTREAM" ]; then
         UPSTREAM="Неизвестно (Возможно, кэш или ошибка)"
